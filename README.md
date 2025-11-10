@@ -64,7 +64,7 @@ $ queuectl config list
 │ max_retries  │ '3'    │
 │ backoff_base │ '2'    │
 └──────────────┴────────┘
-
+```
 ## 🏛️ Architecture Overview
 
 `queuectl` is designed around a central, persistent **SQLite database (`jobs.db`)** that acts as the single source of truth. This makes the system durable and portable.
