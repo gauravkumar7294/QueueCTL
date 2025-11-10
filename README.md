@@ -91,3 +91,27 @@ The worker is the engine of the system, built for reliability.
     * If `attempts < max_retries`, the job's `state` is set back to `pending` and its `run_at` time is updated using an **exponential backoff** formula.
     * If `attempts >= max_retries`, the job's `state` is set to `dead` and it's moved to the Dead Letter Queue (DLQ).
 5.  **Graceful Shutdown:** The worker listens for `SIGTERM` (from `worker stop`) and `SIGINT` (Ctrl+C). It will finish its current job before exiting cleanly, ensuring no work is lost.
+
+## 💡 Assumptions & Trade-offs
+
+This project was built with simplicity and reliability in mind, which led to several key design decisions.
+
+* **SQLite vs. a Dedicated Broker (like Redis or RabbitMQ):**
+    * **Decision:** We chose `better-sqlite3` (a file-based database) over a dedicated in-memory store.
+    * **Pro:** Zero setup, single-file persistence (`jobs.db`), and true durability. The queue survives restarts with no data loss.
+    * **Con:** Not designed for the hyper-high throughput (thousands of jobs/sec) of a dedicated broker.
+
+* **Synchronous Driver (`better-sqlite3`):**
+    * **Decision:** We used a synchronous (blocking) SQLite driver in Node.js.
+    * **Pro:** This massively simplifies the most critical, complex part of the system: the **atomic "fetch-and-lock" transaction**. This prevents race conditions and is far easier to reason about than an async equivalent.
+    * **Con:** It blocks the Node.js event loop during database queries. This is an acceptable trade-off for a background worker that is not handling high-traffic web requests.
+
+* **Global Configuration:**
+    * **Decision:** Settings like `max_retries` are stored in a global `config` table, not on each job.
+    * **Pro:** Allows changing the retry policy for the *entire system* on the fly with one command (`queuectl config set max_retries 5`).
+    * **Con:** You cannot have different retry policies for different *types* of jobs (e.g., a "high-priority" job with 10 retries vs. a "low-priority" one with 2).
+
+* **PID File for Worker Management:**
+    * **Decision:** A `.queuectl.pid` file is used to manage the worker process.
+    * **Pro:** A very simple, OS-level way for `worker stop` to find and signal the `worker start` process without complex Inter-Process Communication (IPC).
+    * **Con:** If the worker is hard-killed (e.g., `kill -9`), the `.queuectl.pid` file can become "stale." The `status` command is built to detect and report this state.
