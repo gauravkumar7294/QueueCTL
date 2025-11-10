@@ -1,0 +1,27 @@
+{
+  "name": "queuectl",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "queuectl": "./index.js"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node src/db/migrate.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "A CLI-based background job queue System",
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "drizzle-orm": "^0.44.7",
+    "find-process": "^2.0.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.6"
+  }
+}
