@@ -22,9 +22,9 @@ npm install
 
 ### 3. Run the Initial Database Migration (Crucial Step) 
 ```bash
-# 1.Generate the migration SQL (creates the 'drizzle' folder)
+## 1.Generate the migration SQL (creates the 'drizzle' folder)
    npm run db:generate
-# 2.Run the migration and seed the database
+## 2.Run the migration and seed the database
    npm run db:migrate
 ```
 
