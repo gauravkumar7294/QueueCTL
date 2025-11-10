@@ -9,7 +9,12 @@ git  clone https://github.com/gauravkumar7294/QueueCTL.git
 cd QueueCTL
 ```
 
-#### 2. Run the Initial Database Migration (Crucial Step) **
+### 2. Install the Dependencies
+```bash
+npm install
+```
+
+### 3. Run the Initial Database Migration (Crucial Step) **
 ```bash
 # 1.Generate the migration SQL (creates the 'drizzle' folder)
    npm run db:generate
