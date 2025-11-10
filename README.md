@@ -7,6 +7,6 @@ a CLI-based background job queue system called queuectl. This system should mana
 3. Run `npm install`
 
 
-# **Run the Initial Database Migration (Crucial Step)**
+# ** Run the Initial Database Migration (Crucial Step) **
 1.npm run db:generate
 2.npm run db:migrate
