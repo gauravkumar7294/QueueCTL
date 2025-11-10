@@ -10,5 +10,8 @@ cd QueueCTL
 ```
 
 #### 2. Run the Initial Database Migration (Crucial Step) **
+```bash
 1.npm run db:generate
-2.npm run db:migrate
+# 2. Run the migration and seed the database
+npm run db:migrate
+```
