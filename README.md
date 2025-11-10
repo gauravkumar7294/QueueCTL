@@ -115,3 +115,109 @@ This project was built with simplicity and reliability in mind, which led to sev
     * **Decision:** A `.queuectl.pid` file is used to manage the worker process.
     * **Pro:** A very simple, OS-level way for `worker stop` to find and signal the `worker start` process without complex Inter-Process Communication (IPC).
     * **Con:** If the worker is hard-killed (e.g., `kill -9`), the `.queuectl.pid` file can become "stale." The `status` command is built to detect and report this state.
+
+
+
+## ✅ Testing Instructions
+
+Follow this end-to-end test plan to verify all core functionality is working correctly.
+
+**Pre-requisite:** You must have run `npm run db:migrate` and `npm link`.
+
+### Test 1: Config System
+
+This test verifies the `config` table was seeded and is writable.
+
+1.  **Check defaults:**
+    ```bash
+    $ queuectl config list
+    # Expected: Shows defaults (max_retries: 3, backoff_base: 2)
+    ```
+2.  **Set a low retry count for fast testing:**
+    ```bash
+    $ queuectl config set max_retries 2
+    Config updated: max_retries = 2
+    ```
+
+### Test 2: Job Success & Worker Status
+
+This test requires **two terminals** open in your project directory.
+
+**In Terminal 1:**
+1.  **Start the worker:**
+    ```bash
+    $ queuectl worker start
+    # Expected: Worker starts and loads config (max_retries=2)
+    ```
+
+**In Terminal 2:**
+1.  **Enqueue a job that will succeed:**
+    ```bash
+    # (Use "..." for Windows-safe JSON)
+    $ queuectl enqueue "{\"command\":\"echo 'test success'\"}"
+    ✅ Job enqueued...
+    ```
+2.  **Check status:**
+    ```bash
+    $ queuectl status
+    # Expected: Worker Status: Running (PID: ...)
+    ```
+
+**In Terminal 1 (Watch the worker):**
+* **Expected:** The worker logs `Picked up job...`, `Executing job...`, and `✅ Completed job...`.
+
+### Test 3: Job Failure & DLQ
+
+Keep the worker running in **Terminal 1**.
+
+**In Terminal 2:**
+1.  **Enqueue a job that will fail:**
+    ```bash
+    $ queuectl enqueue "{\"id\":\"job-fail\", \"command\":\"exit 1\"}"
+    ✅ Job enqueued...
+    ```
+
+**In Terminal 1 (Watch the worker):**
+* **Expected:** The worker will:
+    1.  Log `❌ Failed job ...`
+    2.  Log `Job job-fail will retry in 2s (Attempt 1)`
+    3.  Log `❌ Failed job ...`
+    4.  Log `Job job-fail exhausted retries, moving to DLQ.`
+
+**In Terminal 2:**
+1.  **Check the Dead Letter Queue:**
+    ```bash
+    $ queuectl dlq list
+    # Expected: Shows 'job-fail' in the DLQ table.
+    ```
+
+### Test 4: DLQ Retry
+
+Keep the worker running in **Terminal 1**.
+
+**In Terminal 2:**
+1.  **Retry the failed job:**
+    ```bash
+    $ queuectl dlq retry job-fail
+    ✅ Job job-fail has been moved from DLQ to 'pending' state.
+    ```
+
+**In Terminal 1 (Watch the worker):**
+* **Expected:** The worker will immediately pick up `job-fail` again and repeat the entire failure process (Test 3), moving it back to the DLQ.
+
+### Test 5: Worker Stop
+
+1.  **In Terminal 2:**
+    ```bash
+    $ queuectl worker stop
+    Sent stop signal to worker (PID: ...)
+    ```
+
+2.  **In Terminal 1:**
+    * **Expected:** The worker logs `Gracefully shutting down...` and the process exits.
+
+3.  **In Terminal 2:**
+    ```bash
+    $ queuectl status
+    # Expected: Worker Status: Stopped
+    ```
